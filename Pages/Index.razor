@@ -1,0 +1,15 @@
+﻿@page "/"
+
+
+@using Syncfusion.Blazor.DropDowns;
+ 
+
+
+@value
+
+<DateMaskPicker TValue="DateTime?" @bind-Value="@value"></DateMaskPicker>
+
+@code {
+
+    private DateTime? value { get; set; }
+}

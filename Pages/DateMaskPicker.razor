@@ -1,0 +1,97 @@
+﻿
+@typeparam TValue;
+
+@using Microsoft.AspNetCore.Components;
+@using Microsoft.AspNetCore.Components.Forms;
+@using System.Linq.Expressions;
+@using Syncfusion.Blazor.Calendars;
+@using Syncfusion.Blazor.Inputs;
+@using System.Globalization; 
+
+<div class="@inputGroup">
+    <SfMaskedTextBox @ref="maskedTextbox" CssClass="e-date-mask" Mask="00/00/0000" @bind-Value="@MaskValue" ValueChange="@change" Focus="@(()=> { inputGroup += " e-input-focus"; })" Blur="@( async () => { inputGroup = inputGroup.Replace(" e-input-focus", string.Empty); await datePicker.Hide(); })"></SfMaskedTextBox>
+    <span class="e-input-group-icon e-date-icon e-icons" @onmousedown="@onMousedown"></span>
+</div>
+
+<SfDatePicker @ref="datePicker" TValue="TValue" CssClass="e-hide-input" @bind-Value="@Value">
+    <DatePickerEvents TValue="TValue" OnClose="@(()=> { isShow = false; inputGroup = inputGroup.Replace("e-input-focus", string.Empty); })"></DatePickerEvents>
+</SfDatePicker>
+
+<style>
+    .e-input-group.e-control-wrapper.e-control-container.e-hide-input {
+        visibility: hidden;
+        height: 0px;
+        width: 0px;
+        top: -16px;
+    }
+
+    .e-date-mask.e-input-group.e-control-wrapper.e-control-container {
+        border: 0px;
+    }
+
+    .e-date-mask.e-input-group.e-input-focus:not(.e-success):not(.e-warning):not(.e-error),
+    .e-date-mask.e-input-group.e-control-wrapper.e-input-focus:not(.e-success):not(.e-warning):not(.e-error) {
+        border-color: transparent;
+        box-shadow: none;
+        transition: none;
+    }
+</style>
+
+    @code {
+        private string inputGroup { get; set; } = "e-input-group";
+        private string maskValue { get; set; }
+        private string MaskValue { get; set; }
+        SfDatePicker<TValue> datePicker;
+        SfMaskedTextBox maskedTextbox;
+        [Parameter]
+        public Expression<Func<TValue>> ValueExpression { get; set; }
+
+        [Parameter]
+        public EventCallback<TValue> ValueChanged { get; set; }
+        private TValue _value { get; set; }
+        [Parameter]
+        public TValue Value
+        {
+            get => _value;
+            set
+            {
+                if (EqualityComparer<TValue>.Default.Equals(value, _value)) return;
+                _value = value;
+                var conversionType = typeof(TValue);
+                if (conversionType.IsGenericType && conversionType.GetGenericTypeDefinition().Equals(typeof(Nullable<>)))
+                {
+                    conversionType = Nullable.GetUnderlyingType(conversionType);
+                }
+                var datetimeValue = (DateTime)Convert.ChangeType(value, conversionType, CultureInfo.InvariantCulture);
+                MaskValue = datetimeValue.ToString("MM/dd/yyyy").Replace("/", string.Empty);
+                ValueChanged.InvokeAsync(value);
+            }
+        }
+
+        private void change(MaskChangeEventArgs args)
+        {
+            DateTime dateValue;
+            DateTime.TryParse(args.MaskedValue, out dateValue);
+            var conversionType = typeof(TValue);
+            if (conversionType.IsGenericType && conversionType.GetGenericTypeDefinition().Equals(typeof(Nullable<>)))
+            {
+                conversionType = Nullable.GetUnderlyingType(conversionType);
+            }
+            Value = (TValue)Convert.ChangeType(dateValue, conversionType, CultureInfo.InvariantCulture);
+        }
+        private bool isShow { get; set; }
+        private async Task onMousedown()
+        {
+            if (!isShow)
+            {
+                inputGroup += " e-input-focus";
+                await datePicker.Show();
+                isShow = true;
+            }
+            else
+            {
+                await datePicker.Hide();
+                isShow = false;
+            }
+        }
+    }
